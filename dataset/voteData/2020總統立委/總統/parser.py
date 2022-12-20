@@ -1,5 +1,6 @@
 import csv
 
+# map {party code: party name}
 party = {}
 with open('elpaty.csv', newline='', encoding="utf-8") as csvfile:
     rows = csv.reader(csvfile)
@@ -7,6 +8,8 @@ with open('elpaty.csv', newline='', encoding="utf-8") as csvfile:
         party[row[0]] = row[1]
 print(party)
 
+# elbase.csv mix all cities and townships/urban areas
+# we filter out all cities date here
 filter_city = []
 with open('elbase.csv', newline='', encoding="utf-8") as csvfile:
     rows = csv.reader(csvfile)
@@ -15,12 +18,13 @@ with open('elbase.csv', newline='', encoding="utf-8") as csvfile:
             filter_city.append(row)
 print(filter_city)
 
-
+# get the city name of one row in elctks.csv
 def match_city(row):
     if len(row) >= 5:
         return next((x[5] for x in filter_city if row[:5] == x[:5]), None)
 
 
+# map {canditate code, {'name': name of canditate, 'party': party name of canditate}}
 canditates = {}
 with open('elcand.csv', newline='', encoding="utf-8") as csvfile:
     rows = csv.reader(csvfile)
@@ -29,6 +33,8 @@ with open('elcand.csv', newline='', encoding="utf-8") as csvfile:
             canditates[row[5]] = {'name': row[6], 'party': party[row[7]]}
 print(canditates)
 
+# elctks.csv mix all ticket data across all levels from cities, townships, urban areas
+# we filter out all data on the level of nation or city
 tks_by_nation = []
 tks_by_city = []
 with open('elctks.csv', newline='', encoding="utf-8") as csvfile:
@@ -45,14 +51,15 @@ with open('elctks.csv', newline='', encoding="utf-8") as csvfile:
 print(tks_by_city)
 print(tks_by_nation)
 
-with open('by_nation.csv', 'w', newline='', encoding="utf-8") as csvfile:
+# write tks_by_nation and tks_by_city to csv file
+with open('../../cleaned/president/2020/by_nation.csv', 'w', newline='', encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['candidate', 'candidate_party',
                     'ticket', 'ticket_percentage', 'elected'])
     for row in tks_by_nation:
         writer.writerow(row)
 
-with open('by_city.csv', 'w', newline='', encoding="utf-8") as csvfile:
+with open('../../cleaned/president/2020/by_city.csv', 'w', newline='', encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['city', 'candidate', 'candidate_party',
                     'ticket', 'ticket_percentage', 'elected'])
