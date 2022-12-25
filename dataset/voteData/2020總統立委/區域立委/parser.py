@@ -36,7 +36,7 @@ with open('elcand.csv', newline='', encoding="utf-8") as csvfile:
             canditates[district] = {}
         canditates[district][row[5]] = {'name': row[6], 'party': party[row[7]]}
         parsed_canditates.append(
-            [city, district, row[5], row[6], party[row[7]], 'male' if row[8] == '1' else 'female', int(row[10]), row[-5], row[-4], row[-3] == 'Y', row[-2] == '*'])
+            [city, district[len(city):], row[5], row[6], party[row[7]], 'male' if row[8] == '1' else 'female', int(row[10]), row[-5], row[-4], row[-3] == 'Y', row[-2] == '*'])
 print(canditates)
 
 # parsed_canditates to csv file
@@ -54,7 +54,7 @@ with open('elctks.csv', newline='', encoding="utf-8") as csvfile:
         district = match_district(row)
         if row[5] == '0000' and district:
             city = district[:district.index('第')]
-            tks_by_district.append([city, district, canditates[district][row[6]]['name'],
+            tks_by_district.append([city, district[len(city):], canditates[district][row[6]]['name'],
                                     canditates[district][row[6]]['party'], int(row[7]), float(row[8]), row[9] == '*'])
 print(tks_by_district)
 
