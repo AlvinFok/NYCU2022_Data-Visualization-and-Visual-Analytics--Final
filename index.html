@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Load plotly.js into the DOM -->
+<script src='https://cdn.plot.ly/plotly-2.16.1.min.js'></script>
+<body>
+	<!-- Create a div where the graph will take place -->
+	<!-- <label>Popularity Thresh<input id="popularity_input" type="text" value="80" onchange="mainPlot()"></input></label> -->
+	<div id="barChart"></div>
+	
+</body>
+
+<script>
+
+    function barChart(x, y, xLabel, yLabel, barText, divID){
+        var trace1 = {
+        x: x,
+        y: y,
+        type: 'bar',
+        text: barText,
+        textposition: 'auto',
+        hoverinfo: 'none',
+        marker: {
+            color: 'rgb(158,202,225)',
+            opacity: 0.6,
+            line: {
+            color: 'rgb(8,48,107)',
+            width: 1.5
+            }
+        }
+        };
+
+        var data = [trace1];
+
+        var layout = {
+        title: 'January 2013 Sales Report',
+        barmode: 'stack',
+        height:800
+        };
+
+        Plotly.newPlot(divID, data, layout);
+
+    }
+</script>
+
+<script>
+	function mainPlot(){
+		d3.csv("/dataset/voteData/cleaned/president/2020/by_city.csv").then((data)=>{//TODO can be change file here
+		// var popularityThresh = Math.floor(document.getElementById("popularity_input").value)
+		// //We only care popularity >= 80
+		// data = data.filter( d => {
+		// 	if(d['popularity'] >= popularityThresh)
+		// 		return d;
+		// });
+
+		x = d3.map(data, d => d.candidate);
+		y = d3.map(data, d => d.ticket);
+        barText = d3.map(data, d => d.city);
+		// x = x.map(i => Math.floor( i / 1000));
+		barChart(x, y, 'candidate', 'ticket', barText,'barChart');
+
+	});
+	}
+	
+	mainPlot();
+
+</script>
