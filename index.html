@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Load plotly.js into the DOM -->
+<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
+
+<script
+	src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+	crossorigin="anonymous"
+></script>
+
+<body>
+	<label>Election Type:</label>
+	<select id="electionType">
+		<option>president</option>
+		<option>legislator-at-large</option>
+		<option>legislator</option>
+	</select>
+	<!-- Create a div where the graph will take place -->
+	<div id="map"></div>
+</body>
+
+<script>
+	//file list
+	const files = {
+		president: {
+			2016: {
+				by_city: "/dataset/voteData/cleaned/president/2016/by_city.csv",
+				by_nation: "/dataset/voteData/cleaned/president/2016/by_nation.csv",
+				candidate: "/dataset/voteData/cleaned/president/2016/candidate.csv",
+			},
+			2020: {
+				by_city: "/dataset/voteData/cleaned/president/2020/by_city.csv",
+				by_nation: "/dataset/voteData/cleaned/president/2020/by_nation.csv",
+				candidate: "/dataset/voteData/cleaned/president/2020/candidate.csv",
+			},
+		},
+		"legislator-at-large": {
+			2016: {
+				by_city:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/by_city.csv",
+				by_nation:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/by_nation.csv",
+				candidate:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/candidate.csv",
+			},
+			2020: {
+				by_city:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/by_city.csv",
+				by_nation:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/by_nation.csv",
+				candidate:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/candidate.csv",
+			},
+		},
+		legislator: {
+			2016: {
+				by_city: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
+				candidate: "/dataset/voteData/cleaned/legislator/2016/candidate.csv",
+			},
+			2020: {
+				by_city: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
+				candidate: "/dataset/voteData/cleaned/legislator/2020/candidate.csv",
+			},
+		},
+	};
+	const years = ["2016", "2020"];
+</script>
+
+<!-- Choropleth Map -->
+<script>
+	var data = [{
+    type: "choroplethmapbox", locations: ['臺北市'], z: [-50],
+    geojson: "Taiwan_geo.json"
+    }];
+
+    var layout = {mapbox: {center: {lon: 121, lat: 23.5}, zoom: 7},
+                width: 1000, height:1000};
+
+    var config = {mapboxAccessToken: "pk.eyJ1IjoiYTA1MTI4IiwiYSI6ImNsY2JybmJyYTIyZzEzb2w3dGl3cXpkdXYifQ.aIV8apormocbhm8GpqbySg"};
+
+    Plotly.newPlot('map', data, layout, config);
+</script>
+
