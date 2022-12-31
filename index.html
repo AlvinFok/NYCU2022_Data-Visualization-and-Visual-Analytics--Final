@@ -15,7 +15,7 @@
 
 <script>
 
-    function barChart(x, y, xLabel, yLabel, barText, divID){
+    function barChart(x, y, xLabel, yLabel, barText, title, divID){
         var trace1 = {
         x: x,
         y: y,
@@ -36,7 +36,7 @@
         var data = [trace1];
 
         var layout = {
-        title: 'January 2013 Sales Report',
+        title: title,
         barmode: 'stack',
         height:800
         };
@@ -60,7 +60,7 @@
 		y = d3.map(data, d => d.ticket);
         barText = d3.map(data, d => d.city);
 		// x = x.map(i => Math.floor( i / 1000));
-		barChart(x, y, 'candidate', 'ticket', barText,'barChart');
+		barChart(x, y, 'candidate', 'ticket', barText, "Bar Chart",'barChart');
 
 	});
 	}
