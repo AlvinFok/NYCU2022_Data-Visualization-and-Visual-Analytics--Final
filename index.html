@@ -6,31 +6,79 @@
 
 <!-- Load plotly.js into the DOM -->
 <script src='https://cdn.plot.ly/plotly-2.16.1.min.js'></script>
+
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+    integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+
 <body>
-	<!-- Create a div where the graph will take place -->
-	<!-- <label>Popularity Thresh<input id="popularity_input" type="text" value="80" onchange="mainPlot()"></input></label> -->
-	<div id="barChart"></div>
-	
+    <label>Election Type:</label>
+    <select id="electionType">
+        <option>president</option>
+        <option>legislator-at-large</option>
+        <option>legislator</option>
+    </select>
+    <!-- Create a div where the graph will take place -->
+    <div id="barChart1"></div>
+    <div id="barChart2"></div>
 </body>
 
 <script>
-
+    //file list
+    const files = {
+        president: {
+            "2016": {
+                "by_city": "/dataset/voteData/cleaned/president/2016/by_city.csv",
+                "by_nation": "/dataset/voteData/cleaned/president/2016/by_nation.csv",
+                "candidate": "/dataset/voteData/cleaned/president/2016/candidate.csv",
+            },
+            "2020": {
+                "by_city": "/dataset/voteData/cleaned/president/2020/by_city.csv",
+                "by_nation": "/dataset/voteData/cleaned/president/2020/by_nation.csv",
+                "candidate": "/dataset/voteData/cleaned/president/2020/candidate.csv",
+            },
+        },
+        "legislator-at-large": {
+            "2016": {
+                "by_city": "/dataset/voteData/cleaned/legislator-at-large/2016/by_city.csv",
+                "by_nation": "/dataset/voteData/cleaned/legislator-at-large/2016/by_nation.csv",
+                "candidate": "/dataset/voteData/cleaned/legislator-at-large/2016/candidate.csv",
+            },
+            "2020": {
+                "by_city": "/dataset/voteData/cleaned/legislator-at-large/2020/by_city.csv",
+                "by_nation": "/dataset/voteData/cleaned/legislator-at-large/2020/by_nation.csv",
+                "candidate": "/dataset/voteData/cleaned/legislator-at-large/2020/candidate.csv",
+            },
+        },
+        legislator: {
+            "2016": {
+                "by_city": "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
+                "candidate": "/dataset/voteData/cleaned/legislator/2016/candidate.csv",
+            },
+            "2020": {
+                "by_city": "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
+                "candidate": "/dataset/voteData/cleaned/legislator/2020/candidate.csv",
+            },
+        },
+    };
+    const years = ["2016", "2020"];
+</script>
+<script>
     function barChart(x, y, xLabel, yLabel, barText, title, divID){
         var trace1 = {
-        x: x,
-        y: y,
-        type: 'bar',
-        text: barText,
-        textposition: 'auto',
-        hoverinfo: 'none',
-        marker: {
-            color: 'rgb(158,202,225)',
-            opacity: 0.6,
-            line: {
-            color: 'rgb(8,48,107)',
-            width: 1.5
+            x: x,
+            y: y,
+            type: 'bar',
+            text: barText,
+            textposition: 'auto',
+            hoverinfo: 'none',
+            marker: {
+                color: 'rgb(158,202,225)',
+                opacity: 0.6,
+                line: {
+                    color: 'rgb(8,48,107)',
+                    width: 1.5
+                }
             }
-        }
         };
 
         var data = [trace1];
@@ -47,24 +95,28 @@
 </script>
 
 <script>
-	function mainPlot(){
-		d3.csv("/dataset/voteData/cleaned/president/2020/by_city.csv").then((data)=>{//TODO can be change file here
-		// var popularityThresh = Math.floor(document.getElementById("popularity_input").value)
-		// //We only care popularity >= 80
-		// data = data.filter( d => {
-		// 	if(d['popularity'] >= popularityThresh)
-		// 		return d;
-		// });
+    $("#electionType").on("change", function (e) {
+        let selectedFiles = files[e.target.value];
+        //redraw here ...
+        if (e.target.value == "president") presidentPlot(selectedFiles);
+        // other election type ...
+    });
 
-		x = d3.map(data, d => d.candidate);
-		y = d3.map(data, d => d.ticket);
-        barText = d3.map(data, d => d.city);
-		// x = x.map(i => Math.floor( i / 1000));
-		barChart(x, y, 'candidate', 'ticket', barText, "Bar Chart",'barChart');
+    function presidentPlot(files) {
+        //years: 2016, 2020
+        d3.csv(files["2016"].by_city).then((data) => {
+            x = d3.map(data, d => d.candidate);
+            y = d3.map(data, d => d.ticket);
+            barText = d3.map(data, d => d.city);
+            barChart(x, y, 'candidate', 'ticket', barText, '2016', 'barChart1');
+        });
+        d3.csv(files["2020"].by_city).then((data) => {
+            x = d3.map(data, d => d.candidate);
+            y = d3.map(data, d => d.ticket);
+            barText = d3.map(data, d => d.city);
+            barChart(x, y, 'candidate', 'ticket', barText, '2020', 'barChart2');
+        });
+    }
 
-	});
-	}
-	
-	mainPlot();
-
+    presidentPlot(files["president"]);
 </script>
