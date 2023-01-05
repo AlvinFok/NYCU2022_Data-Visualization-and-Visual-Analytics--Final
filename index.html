@@ -7,8 +7,11 @@
 <!-- Load plotly.js into the DOM -->
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"
-	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+<script
+	src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+	crossorigin="anonymous"
+></script>
 
 <body>
 	<label>Election Type:</label>
@@ -86,8 +89,9 @@
 
 	function findWinner(cityData) {
 		//rtype: winner party name
-		var items = cityData.map(function (i) {//map to ["親民黨", "4.34"]
-			return [i["candidate_party"], i['ticket_percentage']];
+		var items = cityData.map(function (i) {
+			//map to ["親民黨", "4.34"]
+			return [i["candidate_party"], i["ticket_percentage"]];
 		});
 		items.sort(function (a, b) {
 			return +b[1] - +a[1];
@@ -110,35 +114,53 @@
 		}
 	}
 
-
 	async function plotWinnerMap(title, dataByCity, candidateData) {
 		let geoJson = await d3.json("Taiwan_geo.json");
 		let cities = Array.from(new Set(d3.map(dataByCity, (d) => d.city)));
 		let candidateInfo = {};
 		//compatible with president and legialator-at-large
-		let candidates = !candidateData.columns.includes("candidate") ? Array.from(new Set(candidateData.map(d => [d["candidate_party"], d["candidate_party"]]))) : Array.from(new Set(candidateData.map(d => [d["candidate"], d["candidate_party"]])));
+		let candidates = !candidateData.columns.includes("candidate")
+			? Array.from(
+					new Set(
+						candidateData.map((d) => [
+							d["candidate_party"],
+							d["candidate_party"],
+						])
+					)
+			  )
+			: Array.from(
+					new Set(
+						candidateData.map((d) => [d["candidate"], d["candidate_party"]])
+					)
+			  );
 		for (let c of candidates) {
-			candidateInfo[c[0]] = { "party": c[1], "color": partyColor(c[1]), "winZone": { "type": "FeatureCollection", "features": [] } };
+			candidateInfo[c[0]] = {
+				party: c[1],
+				color: partyColor(c[1]),
+				winZone: { type: "FeatureCollection", features: [] },
+			};
 		}
 
 		for (let i = 0; i < dataByCity.length; i += candidates.length) {
 			var cityData = dataByCity.slice(i, i + candidates.length);
-			var cityName = cityData[0].city
+			var cityName = cityData[0].city;
 			var winnerParty = findWinner(cityData);
-			var winner = Object.keys(candidateInfo).find((key) => candidateInfo[key]["party"] == winnerParty);
+			var winner = Object.keys(candidateInfo).find(
+				(key) => candidateInfo[key]["party"] == winnerParty
+			);
 			var cityGeometry = getGeometry(geoJson, cityName);
-			candidateInfo[winner]["winZone"]['features'].push(cityGeometry);
+			candidateInfo[winner]["winZone"]["features"].push(cityGeometry);
 		}
 
-		var layers = []
+		var layers = [];
 		for (let candidate in candidateInfo) {
 			var layer = {
 				sourcetype: "geojson",
 				source: candidateInfo[candidate]["winZone"],
 				type: "fill",
-				color: candidateInfo[candidate]['color'],
-			}
-			layers.push(layer)
+				color: candidateInfo[candidate]["color"],
+			};
+			layers.push(layer);
 		}
 
 		var layout = {
@@ -146,11 +168,17 @@
 				center: { lon: 121, lat: 23.5 },
 				zoom: 6,
 				style: "light",
-				layers: layers
+				layers: layers,
 			},
 			width: 800,
 			height: 800,
-			title: title
+			title: title,
+			colorway: [
+				"#f3cec9",
+				"#e7a4b6",
+				"#cd7eaf",
+				
+			],
 		};
 
 		var config = {
@@ -159,33 +187,40 @@
 		};
 
 		//todo: draw legeng in map ?
-		Plotly.newPlot("map", [
-			{
-				type: "scattermapbox",
-				lat: [46],
-				lon: [-74],
-			},
-		], layout, config);
+		Plotly.newPlot(
+			"map",
+			[
+				{
+					type: "scattermapbox",
+					lat: [46],
+					lon: [-74],
+				},
+			],
+			layout,
+			config
+		);
 	}
 </script>
 
 <script>
 	$("#electionType").on("change", function (e) {
-		let electionType = document.getElementById("electionType").value
+		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
-		if (electionType == "legislator-at-large") legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator-at-large")
+			legislatoratlargePlot(selectedFiles, year);
 		// other election type ...
 	});
 	$("#year").on("change", function (e) {
-		let electionType = document.getElementById("electionType").value
+		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
-		if (electionType == "legislator-at-large") legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator-at-large")
+			legislatoratlargePlot(selectedFiles, year);
 		// other election type ...
 	});
 
@@ -195,16 +230,21 @@
 		let dataByCity = await d3.csv(files[year].by_city);
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
-		plotWinnerMap('2020', dataByCity, candidateData);
+		let title =
+			"Majorities in Taiwan cities of the " + year + " presidential election";
+		plotWinnerMap(title, dataByCity, candidateData);
 	}
 
 	async function legislatoratlargePlot(files, year) {
-		console.log("hi")
 		let dataByNation = await d3.csv(files[year].by_nation);
 		let dataByCity = await d3.csv(files[year].by_city);
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
-		plotWinnerMap('2020', dataByCity, candidateData);
+		let title =
+			"Majorities in Taiwan cities of the " +
+			year +
+			" legislator at large election";
+		plotWinnerMap(title, dataByCity, candidateData);
 	}
 
 	presidentPlot(files["president"], 2016);
