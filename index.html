@@ -7,11 +7,8 @@
 <!-- Load plotly.js into the DOM -->
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 
-<script
-	src="https://code.jquery.com/jquery-3.6.3.min.js"
-	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
-	crossorigin="anonymous"
-></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
 
 <body>
 	<label>Election Type:</label>
@@ -23,8 +20,6 @@
 	<!-- Create a div where the graph will take place -->
 	<div id="map"></div>
 	<div id="myDiv"></div>
-
-    
 </body>
 
 <script>
@@ -93,126 +88,109 @@
 		items.sort(function (a, b) {
 			return +b[1] - +a[1];
 		});
-		
+
 		return items[0][0];
 	}
 
-	d3.json("Taiwan_geo.json").then((geoJson)=>{
-		//read taiwan geometry data
-        var json = geoJson
-		d3.csv("/dataset/voteData/cleaned/president/2020/by_city.csv").then(
-			(csvData) => {
-				cities = Array.from(new Set(d3.map(csvData, (d) => d.city))); //use set to get unique city name and convert to array
-				// var data = [{
-				// type: "choroplethmapbox", locations: [cities[0]], z: [-50],
-				// geojson: "Taiwan_geo.json"
-				// }];
-				var partyInfo = {
-					"親民黨": { "color": "rgba(227, 104, 47, 0.8)", "winZone": {"type": "FeatureCollection","features":[]} },
-					"中國國民黨": { "color": "rgba(9, 0, 136, 0.8)", "winZone": {"type": "FeatureCollection","features":[]} },
-					"民主進步黨": { "color": "rgba(64,145,39, 0.8)", "winZone": {"type": "FeatureCollection","features":[]} },
-				};
-
-				for (var i = 0; i < csvData.length; i += 3) {
-					var cityData = csvData.slice(i, i + 3);
-                    var cityName = cityData[0].city
-					var winner = findWinner(cityData);
-                    var cityGeometry = getGeometry(geoJson, cityName)
-                    partyInfo[winner]["winZone"]['features'].push(cityGeometry)
-				}
-                var layers = []
-                for(var party in partyInfo){
-                    var layer = {
-										sourcetype: "geojson",
-										source: partyInfo[party]["winZone"],
-										type: "fill",
-										color: partyInfo[party]['color'],
-									}
-                    layers.push(layer)
-                }
-                console.log(layers[1])
+	function partyColor(party) {
+		switch (party) {
+			case "親民黨":
+				return "rgba(227, 104, 47, 0.8)";
+			case "中國國民黨":
+				return "rgba(9, 0, 136, 0.8)";
+			case "民主進步黨":
+				return "rgba(64,145,39, 0.8)";
+			default:
+				//todo: hash party name to rgba
+				return "rgba(0, 0, 0, 0)";
+		}
+	}
 
 
-				var layout = {
-					mapbox: { 
-                        center: { lon: 121, lat: 23.5 }, 
-                        zoom: 7,
-                        style: "light",
-                        layers:layers 
-                    },
-					width: 1000,
-					height: 1000,
-                    title: '2020'
-				};
+	async function plotWinnerMap(title, dataByCity, candidateData) {
+		let geoJson = await d3.json("Taiwan_geo.json");
+		let cities = Array.from(new Set(d3.map(dataByCity, (d) => d.city)));
+		let candidateInfo = {};
+		//compatible with president and legialator-at-large
+		let candidates = !candidateData.columns.includes("candidate") ? Array.from(new Set(candidateData.map(d => [d["candidate_party"], d["candidate_party"]]))) : Array.from(new Set(candidateData.map(d => [d["candidate"], d["candidate_party"]])));
+		for (let c of candidates) {
+			candidateInfo[c[0]] = { "party": c[1], "color": partyColor(c[1]), "winZone": { "type": "FeatureCollection", "features": [] } };
+		}
 
-				var config = {
-					mapboxAccessToken:
-						"pk.eyJ1IjoiYTA1MTI4IiwiYSI6ImNsY2JybmJyYTIyZzEzb2w3dGl3cXpkdXYifQ.aIV8apormocbhm8GpqbySg",
-				};
+		for (let i = 0; i < dataByCity.length; i += candidates.length) {
+			var cityData = dataByCity.slice(i, i + candidates.length);
+			var cityName = cityData[0].city
+			var winnerParty = findWinner(cityData);
+			var winner = Object.keys(candidateInfo).find((key) => candidateInfo[key]["party"] == winnerParty);
+			var cityGeometry = getGeometry(geoJson, cityName);
+			candidateInfo[winner]["winZone"]['features'].push(cityGeometry);
+		}
 
-				Plotly.newPlot("map", [
-							{
-								type: "scattermapbox",
-								lat: [46],
-								lon: [-74],
-							},
-						], layout, config);
+		var layers = []
+		for (let candidate in candidateInfo) {
+			var layer = {
+				sourcetype: "geojson",
+				source: candidateInfo[candidate]["winZone"],
+				type: "fill",
+				color: candidateInfo[candidate]['color'],
 			}
-		);
-	});
+			layers.push(layer)
+		}
+
+		var layout = {
+			mapbox: {
+				center: { lon: 121, lat: 23.5 },
+				zoom: 6,
+				style: "light",
+				layers: layers
+			},
+			width: 800,
+			height: 800,
+			title: title
+		};
+
+		var config = {
+			mapboxAccessToken:
+				"pk.eyJ1IjoiYTA1MTI4IiwiYSI6ImNsY2JybmJyYTIyZzEzb2w3dGl3cXpkdXYifQ.aIV8apormocbhm8GpqbySg",
+		};
+
+		//todo: draw legeng in map ?
+		Plotly.newPlot("map", [
+			{
+				type: "scattermapbox",
+				lat: [46],
+				lon: [-74],
+			},
+		], layout, config);
+	}
 </script>
 
 <script>
-	d3.json(
-		"https://raw.githubusercontent.com/plotly/datasets/master/florida-red-data.json",
-		function (redjson) {
-			d3.json(
-				"https://raw.githubusercontent.com/plotly/datasets/master/florida-blue-data.json",
-				function (bluejson) {
+	$("#electionType").on("change", function (e) {
+		let selectedFiles = files[e.target.value];
+		//redraw here ...
+		if (e.target.value == "president") presidentPlot(selectedFiles);
+		if (e.target.value == "legislator-at-large") legislatoratlargePlot(selectedFiles);
+		// other election type ...
+	});
 
-                    console.log(bluejson)
-					Plotly.newPlot(
-						"myDiv",
-						[
-							{
-								type: "scattermapbox",
-								lat: [46],
-								lon: [-74],
-							},
-						],
-						{
-							title: "Florida Counties",
-							height: 600,
-							width: 600,
-							mapbox: {
-								center: {
-									lat: 28,
-									lon: -84,
-								},
-								style: "light",
-								zoom: 4.8,
-								layers: [
-									{
-										sourcetype: "geojson",
-										source: redjson,
-										type: "fill",
-										color: "rgba(163,22,19,0.8)",
-									},
-									{
-										sourcetype: "geojson",
-										source: bluejson,
-										type: "fill",
-										color: "rgba(40,0,113,0.8)",
-									},
-								],
-							},
-						},
-						{
-							mapboxAccessToken: "your access token",
-						}
-					);
-				}
-			);
-		}
-	);
+	async function presidentPlot(files) {
+		//todo: years have 2016 and 2020
+		let dataBtNation = await d3.csv(files["2016"].by_nation);
+		let dataByCity = await d3.csv(files["2016"].by_city);
+		let candidateData = await d3.csv(files["2016"].candidate);
+		//draw winner map
+		plotWinnerMap('2020', dataByCity, candidateData);
+	}
+
+	async function legislatoratlargePlot(files) {
+		//todo: years have 2016 and 2020
+		let dataBtNation = await d3.csv(files["2016"].by_nation);
+		let dataByCity = await d3.csv(files["2016"].by_city);
+		let candidateData = await d3.csv(files["2016"].candidate);
+		//draw winner map
+		plotWinnerMap('2020', dataByCity, candidateData);
+	}
+
+	presidentPlot(files["president"]);
 </script>
