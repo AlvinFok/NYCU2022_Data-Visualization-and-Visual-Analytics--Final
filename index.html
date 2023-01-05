@@ -13,13 +13,17 @@
 <body>
 	<label>Election Type:</label>
 	<select id="electionType">
-		<option>president</option>
-		<option>legislator-at-large</option>
-		<option>legislator</option>
+		<option value="president">president</option>
+		<option value="legislator-at-large">legislator-at-large</option>
+		<option value="legislator">legislator</option>
+	</select>
+	<label>Year:</label>
+	<select id="year">
+		<option value="2016">2016</option>
+		<option value="2020">2020</option>
 	</select>
 	<!-- Create a div where the graph will take place -->
 	<div id="map"></div>
-	<div id="myDiv"></div>
 </body>
 
 <script>
@@ -167,30 +171,41 @@
 
 <script>
 	$("#electionType").on("change", function (e) {
-		let selectedFiles = files[e.target.value];
+		let electionType = document.getElementById("electionType").value
+		let selectedFiles = files[electionType];
+		let year = +document.getElementById("year").value;
 		//redraw here ...
-		if (e.target.value == "president") presidentPlot(selectedFiles);
-		if (e.target.value == "legislator-at-large") legislatoratlargePlot(selectedFiles);
+		if (electionType == "president") presidentPlot(selectedFiles, year);
+		if (electionType == "legislator-at-large") legislatoratlargePlot(selectedFiles, year);
+		// other election type ...
+	});
+	$("#year").on("change", function (e) {
+		let electionType = document.getElementById("electionType").value
+		let selectedFiles = files[electionType];
+		let year = +document.getElementById("year").value;
+		//redraw here ...
+		if (electionType == "president") presidentPlot(selectedFiles, year);
+		if (electionType == "legislator-at-large") legislatoratlargePlot(selectedFiles, year);
 		// other election type ...
 	});
 
-	async function presidentPlot(files) {
+	async function presidentPlot(files, year) {
 		//todo: years have 2016 and 2020
-		let dataBtNation = await d3.csv(files["2016"].by_nation);
-		let dataByCity = await d3.csv(files["2016"].by_city);
-		let candidateData = await d3.csv(files["2016"].candidate);
+		let dataByNation = await d3.csv(files[year].by_nation);
+		let dataByCity = await d3.csv(files[year].by_city);
+		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
 		plotWinnerMap('2020', dataByCity, candidateData);
 	}
 
-	async function legislatoratlargePlot(files) {
-		//todo: years have 2016 and 2020
-		let dataBtNation = await d3.csv(files["2016"].by_nation);
-		let dataByCity = await d3.csv(files["2016"].by_city);
-		let candidateData = await d3.csv(files["2016"].candidate);
+	async function legislatoratlargePlot(files, year) {
+		console.log("hi")
+		let dataByNation = await d3.csv(files[year].by_nation);
+		let dataByCity = await d3.csv(files[year].by_city);
+		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
 		plotWinnerMap('2020', dataByCity, candidateData);
 	}
 
-	presidentPlot(files["president"]);
+	presidentPlot(files["president"], 2016);
 </script>
