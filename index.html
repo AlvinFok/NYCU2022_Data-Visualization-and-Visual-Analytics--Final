@@ -126,9 +126,9 @@
 				return "rgba(163, 36, 28, 0.8)";
 			case "時代力量":
 				return "rgba(230, 184, 62, 0.8)";
-			default:
+			default://無黨籍及未經政黨推薦
 				//todo: hash party name to rgba
-				return "rgba(0, 0, 0, 0)";
+				return "rgba(146, 146, 146, 1)";
 		}
 	}
 
@@ -247,6 +247,7 @@
 				color: partyColors,
 			},
 			type: "bar",
+			text: Object.values(partyInfo).map(String),
 		};
 
 		var data = [trace1];
