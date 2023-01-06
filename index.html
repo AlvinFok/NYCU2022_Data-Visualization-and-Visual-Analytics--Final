@@ -27,6 +27,8 @@
 	</select>
 	<!-- Create a div where the graph will take place -->
 	<div id="map"></div>
+	<div id="partyRatioBarChart"></div>
+
 </body>
 
 <script>
@@ -117,13 +119,13 @@
 			case "台灣工黨":
 				return "rgba(243, 244, 81, 0.8)";
 			case "新黨":
-				return "rgba(238, 209, 70, 0.8)"
+				return "rgba(238, 209, 70, 0.8)";
 			case "泛盟黨":
-				return "rgba(164, 206, 232, 0.8)"
+				return "rgba(164, 206, 232, 0.8)";
 			case "大愛憲改聯盟":
-				return "rgba(163, 36, 28, 0.8)"
+				return "rgba(163, 36, 28, 0.8)";
 			case "時代力量":
-				return "rgba(230, 184, 62, 0.8)"
+				return "rgba(230, 184, 62, 0.8)";
 			default:
 				//todo: hash party name to rgba
 				return "rgba(0, 0, 0, 0)";
@@ -182,11 +184,11 @@
 		var layout = {
 			mapbox: {
 				center: { lon: 121, lat: 23.5 },
-				zoom: 6,
+				zoom: 6.5,
 				style: "light",
 				layers: layers,
 			},
-			width: 800,
+			width: 1200,
 			height: 800,
 			title: title,
 		};
@@ -215,7 +217,46 @@
 
 <!-- party ratio bar chart -->
 <script>
-	function partyRatioBarChart() {}
+	async function partyRatioBarChart(year) {
+		var data = await d3.csv(files["legislator"][year].by_city)
+		var partyInfo = {}
+		data.forEach(function(row){//count elected party
+			if(row["elected"] == "True"){
+				let party = row["candidate_party"]
+				if(!(party in partyInfo)){//this party first elected
+					partyInfo[party] = 1
+
+				}
+				else{
+					partyInfo[party] += 1
+				}
+				
+			}
+
+		})
+		var partyColors = []
+		for(let i in partyInfo){//get party colors
+			partyColors.push(partyColor(i))
+		}
+
+		
+		var trace1 = {
+			x: Object.keys(partyInfo),
+			y: Object.values(partyInfo),
+			marker: {
+				color: partyColors,
+			},
+			type: "bar",
+		};
+
+		var data = [trace1];
+
+		var layout = {
+			title: year + " Legislator Party Ratio",
+		};
+
+		Plotly.newPlot("partyRatioBarChart", data, layout);
+	}
 </script>
 
 <script>
@@ -262,6 +303,9 @@
 			" legislator at large election";
 		plotWinnerMap(title, dataByCity, candidateData);
 	}
-
-	presidentPlot(files["president"], 2016);
+	function mainPlot(){
+		presidentPlot(files["president"], 2016);
+		partyRatioBarChart(2016)
+	}
+	mainPlot()
 </script>
