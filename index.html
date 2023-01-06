@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Load plotly.js into the DOM -->
+<script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+
+<body>
+	<label>Election Type:</label>
+	<select id="electionType">
+		<option value="president">president</option>
+		<option value="legislator-at-large">legislator-at-large</option>
+		<option value="legislator">legislator</option>
+	</select>
+	<label>Year:</label>
+	<select id="year">
+		<option value="2016">2016</option>
+		<option value="2020">2020</option>
+	</select>
+	<!-- Create a div where the graph will take place -->
+	<div id="map"></div>
+</body>
+
+<script>
+	//file list
+	const files = {
+		president: {
+			2016: {
+				by_city: "/dataset/voteData/cleaned/president/2016/by_city.csv",
+				by_nation: "/dataset/voteData/cleaned/president/2016/by_nation.csv",
+				candidate: "/dataset/voteData/cleaned/president/2016/candidate.csv",
+			},
+			2020: {
+				by_city: "/dataset/voteData/cleaned/president/2020/by_city.csv",
+				by_nation: "/dataset/voteData/cleaned/president/2020/by_nation.csv",
+				candidate: "/dataset/voteData/cleaned/president/2020/candidate.csv",
+			},
+		},
+		"legislator-at-large": {
+			2016: {
+				by_city:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/by_city.csv",
+				by_nation:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/by_nation.csv",
+				candidate:
+					"/dataset/voteData/cleaned/legislator-at-large/2016/candidate.csv",
+			},
+			2020: {
+				by_city:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/by_city.csv",
+				by_nation:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/by_nation.csv",
+				candidate:
+					"/dataset/voteData/cleaned/legislator-at-large/2020/candidate.csv",
+			},
+		},
+		legislator: {
+			2016: {
+				by_city: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
+				candidate: "/dataset/voteData/cleaned/legislator/2016/candidate.csv",
+			},
+			2020: {
+				by_city: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
+				candidate: "/dataset/voteData/cleaned/legislator/2020/candidate.csv",
+			},
+		},
+	};
+	const years = ["2016", "2020"];
+</script>
+
+<!-- Choropleth Map -->
+<script>
+	function getGeometry(json, cityName) {
+		//rtype: polygon of zone
+		for (var i = 0; i < json["features"].length; i++) {
+			if (json["features"][i]["id"] == cityName) {
+				return json["features"][i];
+			}
+		}
+	}
+
+	function findWinner(cityData) {
+		//rtype: winner party name
+		var items = cityData.map(function (i) {
+			//map to ["親民黨", "4.34"]
+			return [i["candidate_party"], i["ticket_percentage"]];
+		});
+		items.sort(function (a, b) {
+			return +b[1] - +a[1];
+		});
+
+		return items[0][0];
+	}
+
+	function partyColor(party) {
+		switch (party) {
+			case "親民黨":
+				return "rgba(227, 104, 47, 0.8)";
+			case "中國國民黨":
+				return "rgba(9, 0, 136, 0.8)";
+			case "民主進步黨":
+				return "rgba(64,145,39, 0.8)";
+			default:
+				//todo: hash party name to rgba
+				return "rgba(0, 0, 0, 0)";
+		}
+	}
+
+	async function plotWinnerMap(title, dataByCity, candidateData) {
+		let geoJson = await d3.json("Taiwan_geo.json");
+		let cities = Array.from(new Set(d3.map(dataByCity, (d) => d.city)));
+		let candidateInfo = {};
+		//compatible with president and legialator-at-large
+		let candidates = !candidateData.columns.includes("candidate")
+			? Array.from(
+				new Set(
+					candidateData.map((d) => [
+						d["candidate_party"],
+						d["candidate_party"],
+					])
+				)
+			)
+			: Array.from(
+				new Set(
+					candidateData.map((d) => [d["candidate"], d["candidate_party"]])
+				)
+			);
+		for (let c of candidates) {
+			candidateInfo[c[0]] = {
+				party: c[1],
+				color: partyColor(c[1]),
+				winZone: { type: "FeatureCollection", features: [] },
+			};
+		}
+
+		for (let i = 0; i < dataByCity.length; i += candidates.length) {
+			var cityData = dataByCity.slice(i, i + candidates.length);
+			var cityName = cityData[0].city;
+			var winnerParty = findWinner(cityData);
+			var winner = Object.keys(candidateInfo).find(
+				(key) => candidateInfo[key]["party"] == winnerParty
+			);
+			var cityGeometry = getGeometry(geoJson, cityName);
+			candidateInfo[winner]["winZone"]["features"].push(cityGeometry);
+		}
+
+		var layers = [];
+		for (let candidate in candidateInfo) {
+			var layer = {
+				sourcetype: "geojson",
+				source: candidateInfo[candidate]["winZone"],
+				type: "fill",
+				color: candidateInfo[candidate]["color"],
+			};
+			layers.push(layer);
+		}
+
+		var layout = {
+			mapbox: {
+				center: { lon: 121, lat: 23.5 },
+				zoom: 6,
+				style: "light",
+				layers: layers,
+			},
+			width: 800,
+			height: 800,
+			title: title,
+		};
+
+		var config = {
+			mapboxAccessToken:
+				"pk.eyJ1IjoiYTA1MTI4IiwiYSI6ImNsY2JybmJyYTIyZzEzb2w3dGl3cXpkdXYifQ.aIV8apormocbhm8GpqbySg",
+		};
+
+		//legends by adding dummy traces
+		let data = candidates.map((c) => {
+			return {
+				type: "scattermapbox",
+				lat: [46],
+				lon: [-74],
+				z: [0],
+				name: c[0]==c[1]?c[0]:c[0]+" ("+c[1]+")",
+				showlegend: true,
+				color: partyColor(c[1]),
+			}
+		});
+
+		Plotly.newPlot(
+			"map",
+			data,
+			layout,
+			config
+		);
+	}
+</script>
+
+<script>
+	$("#electionType").on("change", function (e) {
+		let electionType = document.getElementById("electionType").value;
+		let selectedFiles = files[electionType];
+		let year = +document.getElementById("year").value;
+		//redraw here ...
+		if (electionType == "president") presidentPlot(selectedFiles, year);
+		if (electionType == "legislator-at-large")
+			legislatoratlargePlot(selectedFiles, year);
+		// other election type ...
+	});
+	$("#year").on("change", function (e) {
+		let electionType = document.getElementById("electionType").value;
+		let selectedFiles = files[electionType];
+		let year = +document.getElementById("year").value;
+		//redraw here ...
+		if (electionType == "president") presidentPlot(selectedFiles, year);
+		if (electionType == "legislator-at-large")
+			legislatoratlargePlot(selectedFiles, year);
+		// other election type ...
+	});
+
+	async function presidentPlot(files, year) {
+		//todo: years have 2016 and 2020
+		let dataByNation = await d3.csv(files[year].by_nation);
+		let dataByCity = await d3.csv(files[year].by_city);
+		let candidateData = await d3.csv(files[year].candidate);
+		//draw winner map
+		let title =
+			"Majorities in Taiwan cities of the " + year + " presidential election";
+		plotWinnerMap(title, dataByCity, candidateData);
+	}
+
+	async function legislatoratlargePlot(files, year) {
+		let dataByNation = await d3.csv(files[year].by_nation);
+		let dataByCity = await d3.csv(files[year].by_city);
+		let candidateData = await d3.csv(files[year].candidate);
+		//draw winner map
+		let title =
+			"Majorities in Taiwan cities of the " +
+			year +
+			" legislator at large election";
+		plotWinnerMap(title, dataByCity, candidateData);
+	}
+
+	presidentPlot(files["president"], 2016);
+</script>
