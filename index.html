@@ -7,8 +7,11 @@
 <!-- Load plotly.js into the DOM -->
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.3.min.js"
-	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+<script
+	src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+	crossorigin="anonymous"
+></script>
 
 <body>
 	<label>Election Type:</label>
@@ -105,6 +108,22 @@
 				return "rgba(9, 0, 136, 0.8)";
 			case "民主進步黨":
 				return "rgba(64,145,39, 0.8)";
+			case "樹黨":
+				return "rgba(177,199,62, 0.8)";
+			case "中華統一促進黨":
+				return "rgba(41, 53, 127, 0.8)";
+			case "軍公教聯盟黨":
+				return "rgba(200, 42, 37, 0.8)";
+			case "台灣工黨":
+				return "rgba(243, 244, 81, 0.8)";
+			case "新黨":
+				return "rgba(238, 209, 70, 0.8)"
+			case "泛盟黨":
+				return "rgba(164, 206, 232, 0.8)"
+			case "大愛憲改聯盟":
+				return "rgba(163, 36, 28, 0.8)"
+			case "時代力量":
+				return "rgba(230, 184, 62, 0.8)"
 			default:
 				//todo: hash party name to rgba
 				return "rgba(0, 0, 0, 0)";
@@ -118,18 +137,18 @@
 		//compatible with president and legialator-at-large
 		let candidates = !candidateData.columns.includes("candidate")
 			? Array.from(
-				new Set(
-					candidateData.map((d) => [
-						d["candidate_party"],
-						d["candidate_party"],
-					])
-				)
-			)
+					new Set(
+						candidateData.map((d) => [
+							d["candidate_party"],
+							d["candidate_party"],
+						])
+					)
+			  )
 			: Array.from(
-				new Set(
-					candidateData.map((d) => [d["candidate"], d["candidate_party"]])
-				)
-			);
+					new Set(
+						candidateData.map((d) => [d["candidate"], d["candidate_party"]])
+					)
+			  );
 		for (let c of candidates) {
 			candidateInfo[c[0]] = {
 				party: c[1],
@@ -184,19 +203,19 @@
 				lat: [46],
 				lon: [-74],
 				z: [0],
-				name: c[0]==c[1]?c[0]:c[0]+" ("+c[1]+")",
+				name: c[0] == c[1] ? c[0] : c[0] + " (" + c[1] + ")",
 				showlegend: true,
 				color: partyColor(c[1]),
-			}
+			};
 		});
 
-		Plotly.newPlot(
-			"map",
-			data,
-			layout,
-			config
-		);
+		Plotly.newPlot("map", data, layout, config);
 	}
+</script>
+
+<!-- party ratio bar chart -->
+<script>
+	function partyRatioBarChart() {}
 </script>
 
 <script>
