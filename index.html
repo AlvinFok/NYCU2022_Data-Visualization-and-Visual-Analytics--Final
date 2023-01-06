@@ -7,11 +7,8 @@
 <!-- Load plotly.js into the DOM -->
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 
-<script
-	src="https://code.jquery.com/jquery-3.6.3.min.js"
-	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
-	crossorigin="anonymous"
-></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
 
 <body>
 	<label>Election Type:</label>
@@ -66,11 +63,11 @@
 		},
 		legislator: {
 			2016: {
-				by_city: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
+				by_district: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
 				candidate: "/dataset/voteData/cleaned/legislator/2016/candidate.csv",
 			},
 			2020: {
-				by_city: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
+				by_district: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
 				candidate: "/dataset/voteData/cleaned/legislator/2020/candidate.csv",
 			},
 		},
@@ -139,18 +136,18 @@
 		//compatible with president and legialator-at-large
 		let candidates = !candidateData.columns.includes("candidate")
 			? Array.from(
-					new Set(
-						candidateData.map((d) => [
-							d["candidate_party"],
-							d["candidate_party"],
-						])
-					)
-			  )
+				new Set(
+					candidateData.map((d) => [
+						d["candidate_party"],
+						d["candidate_party"],
+					])
+				)
+			)
 			: Array.from(
-					new Set(
-						candidateData.map((d) => [d["candidate"], d["candidate_party"]])
-					)
-			  );
+				new Set(
+					candidateData.map((d) => [d["candidate"], d["candidate_party"]])
+				)
+			);
 		for (let c of candidates) {
 			candidateInfo[c[0]] = {
 				party: c[1],
@@ -217,29 +214,26 @@
 
 <!-- party ratio bar chart -->
 <script>
-	async function partyRatioBarChart(year) {
-		var data = await d3.csv(files["legislator"][year].by_city)
-		var partyInfo = {}
-		data.forEach(function(row){//count elected party
-			if(row["elected"] == "True"){
+	async function partyRatioBarChart(title, dataByDistrct) {
+		var partyInfo = {};
+		dataByDistrct.forEach(function (row) {//count elected party
+			if (row["elected"] == "True") {
 				let party = row["candidate_party"]
-				if(!(party in partyInfo)){//this party first elected
+				if (!(party in partyInfo)) {//this party first elected
 					partyInfo[party] = 1
-
 				}
-				else{
+				else {
 					partyInfo[party] += 1
 				}
-				
 			}
+		});
 
-		})
-		var partyColors = []
-		for(let i in partyInfo){//get party colors
+		var partyColors = [];
+		for (let i in partyInfo) {//get party colors
 			partyColors.push(partyColor(i))
 		}
 
-		
+
 		var trace1 = {
 			x: Object.keys(partyInfo),
 			y: Object.values(partyInfo),
@@ -253,7 +247,7 @@
 		var data = [trace1];
 
 		var layout = {
-			title: year + " Legislator Party Ratio",
+			title: title,
 		};
 
 		Plotly.newPlot("partyRatioBarChart", data, layout);
@@ -269,6 +263,8 @@
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
 			legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator")
+			legislatorPlot(selectedFiles, year);
 		// other election type ...
 	});
 	$("#year").on("change", function (e) {
@@ -279,6 +275,8 @@
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
 			legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator")
+			legislatorPlot(selectedFiles, year);
 		// other election type ...
 	});
 
@@ -291,6 +289,7 @@
 		let title =
 			"Majorities in Taiwan cities of the " + year + " presidential election";
 		plotWinnerMap(title, dataByCity, candidateData);
+		//todo: draw bar chart
 	}
 
 	async function legislatoratlargePlot(files, year) {
@@ -303,10 +302,21 @@
 			year +
 			" legislator at large election";
 		plotWinnerMap(title, dataByCity, candidateData);
+		//todo: draw party ratio (https://zh.m.wikipedia.org/zh-tw/2020%E5%B9%B4%E4%B8%AD%E8%8F%AF%E6%B0%91%E5%9C%8B%E7%AB%8B%E6%B3%95%E5%A7%94%E5%93%A1%E9%81%B8%E8%88%89)
 	}
-	function mainPlot(){
+
+	async function legislatorPlot(files, year) {
+		let dataByDistrct = await d3.csv(files[year].by_district);
+		let candidateData = await d3.csv(files[year].candidate);
+		//todo: draw winner map (not compatible with plotWinnerMap !)
+		//plotWinnerMap(title, dataByCity, candidateData);
+		//draw party ratio
+		let title = year + " Legislator Party Ratio";
+		partyRatioBarChart(title, dataByDistrct);
+	}
+
+	function mainPlot() {
 		presidentPlot(files["president"], 2016);
-		partyRatioBarChart(2016)
 	}
-	mainPlot()
+	mainPlot();
 </script>
