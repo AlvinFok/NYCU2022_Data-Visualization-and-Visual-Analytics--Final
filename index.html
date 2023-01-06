@@ -7,11 +7,8 @@
 <!-- Load plotly.js into the DOM -->
 <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
 
-<script
-	src="https://code.jquery.com/jquery-3.6.3.min.js"
-	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
-	crossorigin="anonymous"
-></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+	integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
 
 <body>
 	<label>Election Type:</label>
@@ -121,18 +118,18 @@
 		//compatible with president and legialator-at-large
 		let candidates = !candidateData.columns.includes("candidate")
 			? Array.from(
-					new Set(
-						candidateData.map((d) => [
-							d["candidate_party"],
-							d["candidate_party"],
-						])
-					)
-			  )
+				new Set(
+					candidateData.map((d) => [
+						d["candidate_party"],
+						d["candidate_party"],
+					])
+				)
+			)
 			: Array.from(
-					new Set(
-						candidateData.map((d) => [d["candidate"], d["candidate_party"]])
-					)
-			  );
+				new Set(
+					candidateData.map((d) => [d["candidate"], d["candidate_party"]])
+				)
+			);
 		for (let c of candidates) {
 			candidateInfo[c[0]] = {
 				party: c[1],
@@ -173,12 +170,6 @@
 			width: 800,
 			height: 800,
 			title: title,
-			colorway: [
-				"#f3cec9",
-				"#e7a4b6",
-				"#cd7eaf",
-				
-			],
 		};
 
 		var config = {
@@ -186,16 +177,22 @@
 				"pk.eyJ1IjoiYTA1MTI4IiwiYSI6ImNsY2JybmJyYTIyZzEzb2w3dGl3cXpkdXYifQ.aIV8apormocbhm8GpqbySg",
 		};
 
-		//todo: draw legeng in map ?
+		//legends by adding dummy traces
+		let data = candidates.map((c) => {
+			return {
+				type: "scattermapbox",
+				lat: [46],
+				lon: [-74],
+				z: [0],
+				name: c[0]==c[1]?c[0]:c[0]+" ("+c[1]+")",
+				showlegend: true,
+				color: partyColor(c[1]),
+			}
+		});
+
 		Plotly.newPlot(
 			"map",
-			[
-				{
-					type: "scattermapbox",
-					lat: [46],
-					lon: [-74],
-				},
-			],
+			data,
 			layout,
 			config
 		);
