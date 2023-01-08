@@ -23,9 +23,10 @@
 		<option value="2020">2020</option>
 	</select>
 	<!-- Create a div where the graph will take place -->
-	<div id="map"></div>
-	<div id="partyRatioBarChart"></div>
-
+	<div id="edu1" class="graph"></div>
+	<div id="edu2" class="graph"></div>
+	<div id="map" class="graph"></div>
+	<div id="partyRatioBarChart" class="graph"></div>
 </body>
 
 <script>
@@ -129,20 +130,20 @@
 	}
 
 	function hashCode(str) { // java String#hashCode
-        var hash = 0;
-        for (var i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return hash;
-    }
+		var hash = 0;
+		for (var i = 0; i < str.length; i++) {
+			hash = str.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return hash;
+	}
 
-    function intToRGB(i) {
-        var c = (i & 0x00FFFFFF)
-            .toString(16)
-            .toUpperCase();
+	function intToRGB(i) {
+		var c = (i & 0x00FFFFFF)
+			.toString(16)
+			.toUpperCase();
 
-        return "#"+("00000".substring(0, 6 - c.length) + c);
-    }
+		return "#" + ("00000".substring(0, 6 - c.length) + c);
+	}
 
 	async function plotWinnerMap(title, dataByCity, candidateData) {
 		let geoJson = await d3.json("Taiwan_geo.json");
@@ -219,7 +220,7 @@
 				z: [0],
 				name: c[0] == c[1] ? c[0] : c[0] + " (" + c[1] + ")",
 				showlegend: true,
-				line:{
+				line: {
 					color: partyColor(c[1])
 				},
 			};
@@ -271,11 +272,53 @@
 	}
 </script>
 
+<!-- heatmap -->
+<script>
+	function legislatorCandidatePlot(id, title, candidateData, filterElected = false) {
+		let candidates = {};
+		let eduLevels = [...new Set(candidateData.map(d => d["education_level"]))];
+		for (let row of candidateData) {
+			if (!Object.keys(candidates).includes(row["candidate_party"])) {
+				candidates[row["candidate_party"]] = {};
+				for (let e of eduLevels) {
+					candidates[row["candidate_party"]][e] = 0;
+				}
+			}
+			if (filterElected) {
+				if (row["elected"] == "True") candidates[row["candidate_party"]][row["education_level"]]++;
+			} else {
+				candidates[row["candidate_party"]][row["education_level"]]++;
+			}
+		}
+
+		let parties = Object.keys(candidates);
+		let data = [];
+		for (let e of eduLevels) {
+			data.push({
+				name: e,
+				type: 'bar',
+				x: parties,
+				y: parties.map(p => candidates[p][e]),
+			});
+		}
+
+		let layout = {
+			title: title,
+			barmode: 'stack',
+		};
+
+		Plotly.newPlot(id, data, layout);
+	}
+</script>
+
 <script>
 	$("#electionType").on("change", function (e) {
 		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
+		for (let e of document.getElementsByClassName("graph")) {
+			Plotly.purge(e.id);
+		}
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
@@ -288,6 +331,9 @@
 		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
+		for (let e of document.getElementsByClassName("graph")) {
+			Plotly.purge(e.id);
+		}
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
@@ -298,7 +344,6 @@
 	});
 
 	async function presidentPlot(files, year) {
-		//todo: years have 2016 and 2020
 		let dataByNation = await d3.csv(files[year].by_nation);
 		let dataByCity = await d3.csv(files[year].by_city);
 		let candidateData = await d3.csv(files[year].candidate);
@@ -325,6 +370,9 @@
 	async function legislatorPlot(files, year) {
 		let dataByDistrct = await d3.csv(files[year].by_district);
 		let candidateData = await d3.csv(files[year].candidate);
+		//draw education levels
+		legislatorCandidatePlot("edu1", 'education levels of candidates in each party', candidateData);
+		legislatorCandidatePlot("edu2", 'education levels of electees in each party', candidateData, true);
 		//todo: draw winner map (not compatible with plotWinnerMap !)
 		//plotWinnerMap(title, dataByCity, candidateData);
 		//draw party ratio
