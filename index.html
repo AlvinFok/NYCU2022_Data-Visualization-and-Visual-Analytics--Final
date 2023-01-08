@@ -272,9 +272,9 @@
 	}
 </script>
 
-<!-- heatmap -->
+<!-- edu level -->
 <script>
-	function legislatorCandidatePlot(id, title, candidateData, filterElected = false) {
+	function legislatorEduPlot(id, title, candidateData, filterElected = false) {
 		let candidates = {};
 		let eduLevels = [...new Set(candidateData.map(d => d["education_level"]))];
 		for (let row of candidateData) {
@@ -371,8 +371,8 @@
 		let dataByDistrct = await d3.csv(files[year].by_district);
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw education levels
-		legislatorCandidatePlot("edu1", 'education levels of candidates in each party', candidateData);
-		legislatorCandidatePlot("edu2", 'education levels of electees in each party', candidateData, true);
+		legislatorEduPlot("edu1", 'education levels of candidates in each party', candidateData);
+		legislatorEduPlot("edu2", 'education levels of electees in each party', candidateData, true);
 		//todo: draw winner map (not compatible with plotWinnerMap !)
 		//plotWinnerMap(title, dataByCity, candidateData);
 		//draw party ratio
