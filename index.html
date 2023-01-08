@@ -123,11 +123,26 @@
 				return "rgba(163, 36, 28, 0.8)";
 			case "時代力量":
 				return "rgba(230, 184, 62, 0.8)";
-			default://無黨籍及未經政黨推薦
-				//todo: hash party name to rgba
-				return "rgba(146, 146, 146, 1)";
+			default:
+				return intToRGB(hashCode(party));
 		}
 	}
+
+	function hashCode(str) { // java String#hashCode
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return hash;
+    }
+
+    function intToRGB(i) {
+        var c = (i & 0x00FFFFFF)
+            .toString(16)
+            .toUpperCase();
+
+        return "#"+("00000".substring(0, 6 - c.length) + c);
+    }
 
 	async function plotWinnerMap(title, dataByCity, candidateData) {
 		let geoJson = await d3.json("Taiwan_geo.json");
@@ -204,7 +219,9 @@
 				z: [0],
 				name: c[0] == c[1] ? c[0] : c[0] + " (" + c[1] + ")",
 				showlegend: true,
-				color: partyColor(c[1]),
+				line:{
+					color: partyColor(c[1])
+				},
 			};
 		});
 
