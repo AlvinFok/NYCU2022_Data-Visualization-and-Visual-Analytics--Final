@@ -24,7 +24,9 @@
 	</select>
 	<!-- Create a div where the graph will take place -->
 	<div id="edu1" class="graph"></div>
+	<div id="pie1" class="graph"></div>
 	<div id="edu2" class="graph"></div>
+	<div id="pie2" class="graph"></div>
 	<div id="map" class="graph"></div>
 	<div id="partyRatioBarChart" class="graph"></div>
 </body>
@@ -309,6 +311,78 @@
 
 		Plotly.newPlot(id, data, layout);
 	}
+
+	function legislatorPieChart(id, title, candidateData, filterElected = false) {
+		let candidatesByEdu = {};
+		let candidatesByGender = {};
+		let eduLevels = [...new Set(candidateData.map(d => d["education_level"]))];
+		let genders = [...new Set(candidateData.map(d => d["gender"]))];
+		for (let e of eduLevels) candidatesByEdu[e] = 0;
+		for (let g of genders) candidatesByGender[g] = 0;
+
+		let total = 0;
+		for (let row of candidateData) {
+			if (filterElected) {
+				if (row["elected"] == "True") {
+					candidatesByEdu[row["education_level"]]++;
+					candidatesByGender[row["gender"]]++;
+					total++;
+				}
+			} else {
+				candidatesByEdu[row["education_level"]]++;
+				candidatesByGender[row["gender"]]++;
+				total++;
+			}
+		}
+		console.log(candidatesByGender);
+		let data = [{
+			values: eduLevels.map((e) => candidatesByEdu[e]),
+			labels: eduLevels,
+			domain: { column: 0 },
+			name: 'education level',
+			hoverinfo: 'label+percent+name',
+			hole: .4,
+			type: 'pie'
+		}, {
+			values: genders.map((g) => candidatesByGender[g]),
+			labels: genders,
+			domain: { column: 1 },
+			name: 'gender',
+			hoverinfo: 'label+percent+name',
+			hole: .4,
+			type: 'pie'
+		}];
+
+		let layout = {
+			title: title,
+			annotations: [
+				{
+					font: {
+						size: 15
+					},
+					showarrow: false,
+					text: 'education<br>level',
+					x: 0.15,
+					y: 0.5
+				},
+				{
+					font: {
+						size: 15
+					},
+					showarrow: false,
+					text: 'gender',
+					x: 0.82,
+					y: 0.5
+				}
+			],
+			height: 400,
+			width: 600,
+			showlegend: true,
+			grid: { rows: 1, columns: 2 }
+		};
+
+		Plotly.newPlot(id, data, layout);
+	}
 </script>
 
 <script>
@@ -372,11 +446,13 @@
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw education levels
 		legislatorEduPlot("edu1", 'education levels of candidates in each party', candidateData);
+		legislatorPieChart("pie1", "candidates distribution", candidateData);
 		legislatorEduPlot("edu2", 'education levels of electees in each party', candidateData, true);
+		legislatorPieChart("pie2", "electees distribution", candidateData, true);
 		//todo: draw winner map (not compatible with plotWinnerMap !)
 		//plotWinnerMap(title, dataByCity, candidateData);
 		//draw party ratio
-		let title = year + " Legislator Party Ratio";
+		let title = year + " Legislator of each party";
 		partyRatioBarChart(title, dataByDistrct);
 	}
 
