@@ -23,7 +23,12 @@
 		<option value="2020">2020</option>
 	</select>
 	<!-- Create a div where the graph will take place -->
-	<div id="map"></div>
+	<div id="edu1" class="graph"></div>
+	<div id="pie1" class="graph"></div>
+	<div id="edu2" class="graph"></div>
+	<div id="pie2" class="graph"></div>
+	<div id="map" class="graph"></div>
+	<div id="partyRatioBarChart" class="graph"></div>
 </body>
 
 <script>
@@ -61,11 +66,11 @@
 		},
 		legislator: {
 			2016: {
-				by_city: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
+				by_district: "/dataset/voteData/cleaned/legislator/2016/by_district.csv",
 				candidate: "/dataset/voteData/cleaned/legislator/2016/candidate.csv",
 			},
 			2020: {
-				by_city: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
+				by_district: "/dataset/voteData/cleaned/legislator/2020/by_district.csv",
 				candidate: "/dataset/voteData/cleaned/legislator/2020/candidate.csv",
 			},
 		},
@@ -105,10 +110,41 @@
 				return "rgba(9, 0, 136, 0.8)";
 			case "民主進步黨":
 				return "rgba(64,145,39, 0.8)";
+			case "樹黨":
+				return "rgba(177,199,62, 0.8)";
+			case "中華統一促進黨":
+				return "rgba(41, 53, 127, 0.8)";
+			case "軍公教聯盟黨":
+				return "rgba(200, 42, 37, 0.8)";
+			case "台灣工黨":
+				return "rgba(243, 244, 81, 0.8)";
+			case "新黨":
+				return "rgba(238, 209, 70, 0.8)";
+			case "泛盟黨":
+				return "rgba(164, 206, 232, 0.8)";
+			case "大愛憲改聯盟":
+				return "rgba(163, 36, 28, 0.8)";
+			case "時代力量":
+				return "rgba(230, 184, 62, 0.8)";
 			default:
-				//todo: hash party name to rgba
-				return "rgba(0, 0, 0, 0)";
+				return intToRGB(hashCode(party));
 		}
+	}
+
+	function hashCode(str) { // java String#hashCode
+		var hash = 0;
+		for (var i = 0; i < str.length; i++) {
+			hash = str.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return hash;
+	}
+
+	function intToRGB(i) {
+		var c = (i & 0x00FFFFFF)
+			.toString(16)
+			.toUpperCase();
+
+		return "#" + ("00000".substring(0, 6 - c.length) + c);
 	}
 
 	async function plotWinnerMap(title, dataByCity, candidateData) {
@@ -163,11 +199,11 @@
 		var layout = {
 			mapbox: {
 				center: { lon: 121, lat: 23.5 },
-				zoom: 6,
+				zoom: 6.5,
 				style: "light",
 				layers: layers,
 			},
-			width: 800,
+			width: 1200,
 			height: 800,
 			title: title,
 		};
@@ -184,18 +220,168 @@
 				lat: [46],
 				lon: [-74],
 				z: [0],
-				name: c[0]==c[1]?c[0]:c[0]+" ("+c[1]+")",
+				name: c[0] == c[1] ? c[0] : c[0] + " (" + c[1] + ")",
 				showlegend: true,
-				color: partyColor(c[1]),
+				line: {
+					color: partyColor(c[1])
+				},
+			};
+		});
+
+		Plotly.newPlot("map", data, layout, config);
+	}
+</script>
+
+<!-- party ratio bar chart -->
+<script>
+	async function partyRatioBarChart(title, dataByDistrct) {
+		var partyInfo = {};
+		dataByDistrct.forEach(function (row) {//count elected party
+			if (row["elected"] == "True") {
+				let party = row["candidate_party"]
+				if (!(party in partyInfo)) {//this party first elected
+					partyInfo[party] = 1
+				}
+				else {
+					partyInfo[party] += 1
+				}
 			}
 		});
 
-		Plotly.newPlot(
-			"map",
-			data,
-			layout,
-			config
-		);
+		var partyColors = [];
+		for (let i in partyInfo) {//get party colors
+			partyColors.push(partyColor(i))
+		}
+
+
+		var trace1 = {
+			x: Object.keys(partyInfo),
+			y: Object.values(partyInfo),
+			marker: {
+				color: partyColors,
+			},
+			type: "bar",
+			text: Object.values(partyInfo).map(String),
+		};
+
+		var data = [trace1];
+
+		var layout = {
+			title: title,
+		};
+
+		Plotly.newPlot("partyRatioBarChart", data, layout);
+	}
+</script>
+
+<!-- edu level -->
+<script>
+	function legislatorEduPlot(id, title, candidateData, filterElected = false) {
+		let candidates = {};
+		let eduLevels = [...new Set(candidateData.map(d => d["education_level"]))];
+		for (let row of candidateData) {
+			if (!Object.keys(candidates).includes(row["candidate_party"])) {
+				candidates[row["candidate_party"]] = {};
+				for (let e of eduLevels) {
+					candidates[row["candidate_party"]][e] = 0;
+				}
+			}
+			if (filterElected) {
+				if (row["elected"] == "True") candidates[row["candidate_party"]][row["education_level"]]++;
+			} else {
+				candidates[row["candidate_party"]][row["education_level"]]++;
+			}
+		}
+
+		let parties = Object.keys(candidates);
+		let data = [];
+		for (let e of eduLevels) {
+			data.push({
+				name: e,
+				type: 'bar',
+				x: parties,
+				y: parties.map(p => candidates[p][e]),
+			});
+		}
+
+		let layout = {
+			title: title,
+			barmode: 'stack',
+		};
+
+		Plotly.newPlot(id, data, layout);
+	}
+
+	function legislatorPieChart(id, title, candidateData, filterElected = false) {
+		let candidatesByEdu = {};
+		let candidatesByGender = {};
+		let eduLevels = [...new Set(candidateData.map(d => d["education_level"]))];
+		let genders = [...new Set(candidateData.map(d => d["gender"]))];
+		for (let e of eduLevels) candidatesByEdu[e] = 0;
+		for (let g of genders) candidatesByGender[g] = 0;
+
+		let total = 0;
+		for (let row of candidateData) {
+			if (filterElected) {
+				if (row["elected"] == "True") {
+					candidatesByEdu[row["education_level"]]++;
+					candidatesByGender[row["gender"]]++;
+					total++;
+				}
+			} else {
+				candidatesByEdu[row["education_level"]]++;
+				candidatesByGender[row["gender"]]++;
+				total++;
+			}
+		}
+		console.log(candidatesByGender);
+		let data = [{
+			values: eduLevels.map((e) => candidatesByEdu[e]),
+			labels: eduLevels,
+			domain: { column: 0 },
+			name: 'education level',
+			hoverinfo: 'label+percent+name',
+			hole: .4,
+			type: 'pie'
+		}, {
+			values: genders.map((g) => candidatesByGender[g]),
+			labels: genders,
+			domain: { column: 1 },
+			name: 'gender',
+			hoverinfo: 'label+percent+name',
+			hole: .4,
+			type: 'pie'
+		}];
+
+		let layout = {
+			title: title,
+			annotations: [
+				{
+					font: {
+						size: 15
+					},
+					showarrow: false,
+					text: 'education<br>level',
+					x: 0.15,
+					y: 0.5
+				},
+				{
+					font: {
+						size: 15
+					},
+					showarrow: false,
+					text: 'gender',
+					x: 0.82,
+					y: 0.5
+				}
+			],
+			height: 400,
+			width: 600,
+			showlegend: true,
+			grid: { rows: 1, columns: 2 }
+		};
+
+		Plotly.newPlot(id, data, layout);
 	}
 </script>
 
@@ -204,25 +390,34 @@
 		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
+		for (let e of document.getElementsByClassName("graph")) {
+			Plotly.purge(e.id);
+		}
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
 			legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator")
+			legislatorPlot(selectedFiles, year);
 		// other election type ...
 	});
 	$("#year").on("change", function (e) {
 		let electionType = document.getElementById("electionType").value;
 		let selectedFiles = files[electionType];
 		let year = +document.getElementById("year").value;
+		for (let e of document.getElementsByClassName("graph")) {
+			Plotly.purge(e.id);
+		}
 		//redraw here ...
 		if (electionType == "president") presidentPlot(selectedFiles, year);
 		if (electionType == "legislator-at-large")
 			legislatoratlargePlot(selectedFiles, year);
+		if (electionType == "legislator")
+			legislatorPlot(selectedFiles, year);
 		// other election type ...
 	});
 
 	async function presidentPlot(files, year) {
-		//todo: years have 2016 and 2020
 		let dataByNation = await d3.csv(files[year].by_nation);
 		let dataByCity = await d3.csv(files[year].by_city);
 		let candidateData = await d3.csv(files[year].candidate);
@@ -230,6 +425,7 @@
 		let title =
 			"Majorities in Taiwan cities of the " + year + " presidential election";
 		plotWinnerMap(title, dataByCity, candidateData);
+		//todo: draw bar chart
 	}
 
 	async function legislatoratlargePlot(files, year) {
@@ -242,7 +438,26 @@
 			year +
 			" legislator at large election";
 		plotWinnerMap(title, dataByCity, candidateData);
+		//todo: draw party ratio (https://zh.m.wikipedia.org/zh-tw/2020%E5%B9%B4%E4%B8%AD%E8%8F%AF%E6%B0%91%E5%9C%8B%E7%AB%8B%E6%B3%95%E5%A7%94%E5%93%A1%E9%81%B8%E8%88%89)
 	}
 
-	presidentPlot(files["president"], 2016);
+	async function legislatorPlot(files, year) {
+		let dataByDistrct = await d3.csv(files[year].by_district);
+		let candidateData = await d3.csv(files[year].candidate);
+		//draw education levels
+		legislatorEduPlot("edu1", 'education levels of candidates in each party', candidateData);
+		legislatorPieChart("pie1", "candidates distribution", candidateData);
+		legislatorEduPlot("edu2", 'education levels of electees in each party', candidateData, true);
+		legislatorPieChart("pie2", "electees distribution", candidateData, true);
+		//todo: draw winner map (not compatible with plotWinnerMap !)
+		//plotWinnerMap(title, dataByCity, candidateData);
+		//draw party ratio
+		let title = year + " Legislator of each party";
+		partyRatioBarChart(title, dataByDistrct);
+	}
+
+	function mainPlot() {
+		presidentPlot(files["president"], 2016);
+	}
+	mainPlot();
 </script>
