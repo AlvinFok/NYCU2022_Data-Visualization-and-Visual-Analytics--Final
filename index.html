@@ -175,6 +175,7 @@
 				winZone: { type: "FeatureCollection", features: [] },
 			};
 		}
+		console.log(dataByCity)
 
 		for (let i = 0; i < dataByCity.length; i += candidates.length) {
 			var cityData = dataByCity.slice(i, i + candidates.length);
@@ -184,6 +185,7 @@
 				(key) => candidateInfo[key]["party"] == winnerParty
 			);
 			var cityGeometry = getGeometry(geoJson, cityName);
+			console.log(cityName, cityGeometry)
 			candidateInfo[winner]["winZone"]["features"].push(cityGeometry);
 		}
 
@@ -236,9 +238,9 @@
 
 <!-- party ratio bar chart -->
 <script>
-	async function partyRatioBarChart(title, dataByDistrct) {
+	async function partyRatioBarChart(title, dataByDistrict) {
 		var partyInfo = {};
-		dataByDistrct.forEach(function (row) {//count elected party
+		dataByDistrict.forEach(function (row) {//count elected party
 			if (row["elected"] == "True") {
 				let party = row["candidate_party"]
 				if (!(party in partyInfo)) {//this party first elected
@@ -336,7 +338,6 @@
 				total++;
 			}
 		}
-		console.log(candidatesByGender);
 		let data = [{
 			values: eduLevels.map((e) => candidatesByEdu[e]),
 			labels: eduLevels,
@@ -398,7 +399,6 @@
 		for (let row of dataByCity) {
 			y[row.city][x.indexOf(row.candidate)] = row.ticket;
 		}
-		console.log(y);
 
 		let data = [];
 
@@ -435,7 +435,6 @@
 		for (let row of dataByCity) {
 			y[row.city][x.indexOf(row.candidate_party)] = row.ticket;
 		}
-		console.log(y);
 
 		let data = [];
 
@@ -460,6 +459,50 @@
 		};
 
 		Plotly.newPlot(divID, data, layout);
+	}
+</script>
+
+<!-- helper function -->
+<script>
+	function district2City(districtData){
+		let electedCandidate = districtData.filter(row => row.elected == "True")//get all elected candidate
+		let cityData = electedCandidate.reduce((group, row1) =>{//group by city
+			let city = row1.city
+			group[city] = group[city] ?? []
+			group[city].push(row1)
+			return group
+		}, {})
+
+		let topParty = []
+		for(let i in cityData){//for each city find major party
+			
+			let partyCounter = cityData[i].reduce((party, row) => {
+
+				party[row.candidate_party] = party[row.candidate_party] ? ++party[row.candidate_party] : 1
+				return party
+			},{})
+			
+			if(partyCounter.length > 1){
+				partyCounter = partyCounter.sort(function (a, b) {
+					return +b[1] - +a[1];
+				});
+			}
+			topParty[i] = partyCounter[0]
+			topParty.push({
+				"city":i,
+				"candidate_party":Object.keys(partyCounter)[0],
+				"elected":"True"
+			})
+			topParty.push({//unless
+				"city":i,
+				"candidate_party":Object.keys(partyCounter)[0],
+				"elected":"False"
+			})
+			
+
+		}
+			console.log(topParty)
+			return topParty
 	}
 </script>
 
@@ -520,22 +563,37 @@
 	}
 
 	async function legislatorPlot(files, year) {
-		let dataByDistrct = await d3.csv(files[year].by_district);
-		let candidateData = await d3.csv(files[year].candidate);
+		let dataByDistrict = await d3.csv(files[year].by_district);
+		var candidateData = await d3.csv(files[year].candidate);
+		let title = year + " Legislator of each party";
+
 		//draw education levels
 		legislatorEduPlot("edu1", 'education levels of candidates in each party', candidateData);
 		legislatorPieChart("pie1", "candidates distribution", candidateData);
 		legislatorEduPlot("edu2", 'education levels of electees in each party', candidateData, true);
 		legislatorPieChart("pie2", "electees distribution", candidateData, true);
 		//todo: draw winner map (not compatible with plotWinnerMap !)
-		//plotWinnerMap(title, dataByCity, candidateData);
+		let dataByCity = district2City(dataByDistrict)
+		candidateData = [
+			{
+				"candidate":"中國國民黨",
+				"candidate_party":"中國國民黨"
+			},
+			{
+				"candidate":"民主進步黨",
+				"candidate_party":"民主進步黨"
+			},
+			
+		]
+		candidateData["columns"] = ["candidate", "candidate_party"]
+		plotWinnerMap(title, dataByCity, candidateData);
 		//draw party ratio
-		let title = year + " Legislator of each party";
-		partyRatioBarChart(title, dataByDistrct);
+		partyRatioBarChart(title, dataByDistrict, candidateData);
 	}
 
 	function mainPlot() {
 		presidentPlot(files["president"], 2016);
 	}
 	mainPlot();
+
 </script>
