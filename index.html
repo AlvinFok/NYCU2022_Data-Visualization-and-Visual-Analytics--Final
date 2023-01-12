@@ -28,6 +28,7 @@
 	<div id="edu2" class="graph"></div>
 	<div id="pie2" class="graph"></div>
 	<div id="presidentBarChart" class="graph"></div>
+	<div id="legislatoratlargeBarChart" class="graph"></div>
 	<div id="map" class="graph"></div>
 	<div id="partyRatioBarChart" class="graph"></div>
 </body>
@@ -423,6 +424,43 @@
 
 		Plotly.newPlot(divID, data, layout);
 	}
+
+	function legislatoratlargeBarChart(dataByCity, title, divID) {
+		let x = [...new Set(d3.map(dataByCity, d => d.candidate_party))];
+		let y = {};
+		let cities = [...new Set(d3.map(dataByCity, d => d.city))];
+		for (let c of cities) {
+			y[c] = new Array(x.length);
+		}
+		for (let row of dataByCity) {
+			y[row.city][x.indexOf(row.candidate_party)] = row.ticket;
+		}
+		console.log(y);
+
+		let data = [];
+
+		for (let c of cities) {
+			data.push({
+				x: x,
+				y: y[c],
+				type: 'bar',
+				name: c,
+				text: new Array(x.length).fill(c),
+				textposition: 'auto',
+				marker: {
+					color: intToRGB(hashCode(c)),
+				},
+			});
+		}
+
+		var layout = {
+			title: title,
+			barmode: 'stack',
+			height: 800
+		};
+
+		Plotly.newPlot(divID, data, layout);
+	}
 </script>
 
 <script>
@@ -465,8 +503,7 @@
 		let title =
 			"Majorities in Taiwan cities of the " + year + " presidential election";
 		plotWinnerMap(title, dataByCity, candidateData);
-		//todo: draw bar chart
-		presidentBarChart(dataByCity, year+" president tickets distribution", "presidentBarChart");
+		presidentBarChart(dataByCity, year + " president tickets distribution", "presidentBarChart");
 	}
 
 	async function legislatoratlargePlot(files, year) {
@@ -479,7 +516,7 @@
 			year +
 			" legislator at large election";
 		plotWinnerMap(title, dataByCity, candidateData);
-		//todo: draw party ratio (https://zh.m.wikipedia.org/zh-tw/2020%E5%B9%B4%E4%B8%AD%E8%8F%AF%E6%B0%91%E5%9C%8B%E7%AB%8B%E6%B3%95%E5%A7%94%E5%93%A1%E9%81%B8%E8%88%89)
+		legislatoratlargeBarChart(dataByCity, year + " legislator at large distribution", "legislatoratlargeBarChart");
 	}
 
 	async function legislatorPlot(files, year) {
