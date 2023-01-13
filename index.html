@@ -13,9 +13,9 @@
 <body>
 	<label>Election Type:</label>
 	<select id="electionType">
-		<option value="president">president</option>
-		<option value="legislator-at-large">legislator-at-large</option>
-		<option value="legislator">legislator</option>
+		<option value="president">總統</option>
+		<option value="legislator-at-large">不分區立委</option>
+		<option value="legislator">區域立委</option>
 	</select>
 	<label>Year:</label>
 	<select id="year">
@@ -23,13 +23,13 @@
 		<option value="2020">2020</option>
 	</select>
 	<!-- Create a div where the graph will take place -->
+	<div id="map" class="graph"></div>
 	<div id="edu1" class="graph"></div>
 	<div id="pie1" class="graph"></div>
 	<div id="edu2" class="graph"></div>
 	<div id="pie2" class="graph"></div>
 	<div id="presidentBarChart" class="graph"></div>
 	<div id="legislatoratlargeBarChart" class="graph"></div>
-	<div id="map" class="graph"></div>
 	<div id="partyRatioBarChart" class="graph"></div>
 </body>
 
@@ -544,9 +544,9 @@
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
 		let title =
-			"Majorities in Taiwan cities of the " + year + " presidential election";
+			year + "總統選舉地圖";
 		plotWinnerMap(title, dataByCity, candidateData);
-		presidentBarChart(dataByCity, year + " president tickets distribution", "presidentBarChart");
+		presidentBarChart(dataByCity, year + "總統選票分佈", "presidentBarChart");
 	}
 
 	async function legislatoratlargePlot(files, year) {
@@ -555,23 +555,22 @@
 		let candidateData = await d3.csv(files[year].candidate);
 		//draw winner map
 		let title =
-			"Majorities in Taiwan cities of the " +
 			year +
-			" legislator at large election";
+			"不分區選舉地圖";
 		plotWinnerMap(title, dataByCity, candidateData);
-		legislatoratlargeBarChart(dataByCity, year + " legislator at large distribution", "legislatoratlargeBarChart");
+		legislatoratlargeBarChart(dataByCity, year + "不分區立委選票分佈", "legislatoratlargeBarChart");
 	}
 
 	async function legislatorPlot(files, year) {
 		let dataByDistrict = await d3.csv(files[year].by_district);
 		var candidateData = await d3.csv(files[year].candidate);
-		let title = year + " Legislator of each party";
+		let title = year + "區域立委";
 
 		//draw education levels
-		legislatorEduPlot("edu1", 'education levels of candidates in each party', candidateData);
-		legislatorPieChart("pie1", "candidates distribution", candidateData);
-		legislatorEduPlot("edu2", 'education levels of electees in each party', candidateData, true);
-		legislatorPieChart("pie2", "electees distribution", candidateData, true);
+		legislatorEduPlot("edu1", '各政黨候選人教育程度', candidateData);
+		legislatorPieChart("pie1", "各政黨候選人教育程度比例", candidateData);
+		legislatorEduPlot("edu2", '各政黨得選人教育程度', candidateData, true);
+		legislatorPieChart("pie2", "各政黨得選人教育程度比例", candidateData, true);
 		//todo: draw winner map (not compatible with plotWinnerMap !)
 		let dataByCity = district2City(dataByDistrict)
 		candidateData = [
